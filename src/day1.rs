@@ -52,15 +52,19 @@ fn find_num_of_increases_sliding_window(measurements: &Vec<i32>) -> i32 {
 
     // let without_last = &measurements[0..measurements.len() - 1];
 
+    fn sum_windows((e1, e2, e3): (&i32, &i32, &i32)) -> i32 {
+        e1 + e2 + e3
+    }
+
     let w1 = measurements[0..measurements.len() - 1]
         .iter()
         .tuple_windows::<(_, _, _)>()
-        .map(|(e1, e2, e3)| e1 + e2 + e3);
+        .map(sum_windows);
     let w2 = measurements
         .iter()
         .skip(1)
         .tuple_windows::<(_, _, _)>()
-        .map(|(e1, e2, e3)| e1 + e2 + e3);
+        .map(sum_windows);
 
     w1.zip(w2).fold(
         0,
