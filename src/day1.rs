@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 fn main() {
     // let measurements = read_file("input/day1.txt");
-    let measurements = read_file_lines_as("input/day1.txt", |l| l.parse::<i32>().unwrap());
+    let measurements = read_file_lines_as("input/day1.txt", |l| l.parse::<u32>().unwrap());
 
     let num_of_increases = find_num_of_increases(&measurements);
     println!(
@@ -17,7 +17,7 @@ fn main() {
     );
 }
 
-fn find_num_of_increases(measurements: &Vec<i32>) -> i32 {
+fn find_num_of_increases(measurements: &Vec<u32>) -> u32 {
     /*let mut num_of_increases = 0;
     for (i, m_new) in measurements.iter().enumerate().skip(1) {
         let m_old = &measurements[i - 1];
@@ -39,7 +39,7 @@ fn find_num_of_increases(measurements: &Vec<i32>) -> i32 {
     )
 }
 
-fn find_num_of_increases_sliding_window(measurements: &Vec<i32>) -> i32 {
+fn find_num_of_increases_sliding_window(measurements: &Vec<u32>) -> u32 {
     /*let mut num_of_increases = 0;
     for (i, _) in measurements.iter().enumerate().skip(3) {
         let w_old = measurements[i - 3] + measurements[i - 2] + measurements[i - 1];
@@ -52,7 +52,7 @@ fn find_num_of_increases_sliding_window(measurements: &Vec<i32>) -> i32 {
 
     // let without_last = &measurements[0..measurements.len() - 1];
 
-    fn sum_windows((e1, e2, e3): (&i32, &i32, &i32)) -> i32 {
+    fn sum_windows((e1, e2, e3): (&u32, &u32, &u32)) -> u32 {
         e1 + e2 + e3
     }
 
