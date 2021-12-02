@@ -1,5 +1,5 @@
 use advent_of_code_2021::read_file_lines_as;
-use std::fmt::{write, Display};
+use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -52,6 +52,7 @@ impl Command {
 struct Submarine {
     position: u32,
     depth: u32,
+    aim: u32,
 }
 
 impl Display for Submarine {
@@ -65,6 +66,7 @@ impl Submarine {
         Self {
             position: 0,
             depth: 0,
+            aim: 0,
         }
     }
 
@@ -75,10 +77,22 @@ impl Submarine {
     fn execute(&mut self, command: &Command) {
         use Direction::*;
         let Command { dir, amount } = command;
-        match dir {
+
+        // first assignemnt
+        /*match dir {
             Forward => self.position += amount,
             Down => self.depth += amount,
             Up => self.depth -= amount,
+        }*/
+
+        // second assignment
+        match dir {
+            Forward => {
+                self.position += amount;
+                self.depth += amount * self.aim
+            }
+            Down => self.aim += amount,
+            Up => self.aim -= amount,
         }
     }
 
