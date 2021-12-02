@@ -10,8 +10,7 @@ pub fn read_file_to_string(path: impl AsRef<Path>) -> String {
 }
 
 pub fn read_file_lines(path: impl AsRef<Path>) -> Vec<String> {
-    let contents = read_file_to_string(path);
-    contents.lines().map(|s| s.to_string()).collect()
+    read_file_lines_as(path, |s| s.to_string())
 }
 
 pub fn read_file_lines_as<T>(path: impl AsRef<Path>, f: fn(&str) -> T) -> Vec<T> {
