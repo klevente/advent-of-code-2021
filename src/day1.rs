@@ -1,9 +1,9 @@
+use advent_of_code_2021::read_file_lines_as;
 use itertools::Itertools;
-use std::io::Read;
-use std::{fs::File, path::Path};
 
 fn main() {
-    let measurements = read_file("input/day1.txt");
+    // let measurements = read_file("input/day1.txt");
+    let measurements = read_file_lines_as("input/day1.txt", |l| l.parse::<i32>().unwrap());
 
     let num_of_increases = find_num_of_increases(&measurements);
     println!(
@@ -70,15 +70,4 @@ fn find_num_of_increases_sliding_window(measurements: &Vec<i32>) -> i32 {
         0,
         |acc, (m_old, m_new)| if m_new > m_old { acc + 1 } else { acc },
     )
-}
-
-fn read_file(path: impl AsRef<Path>) -> Vec<i32> {
-    let mut file = File::open(path).expect("Failed to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    let mut v: Vec<i32> = Vec::new();
-    for line in contents.lines() {
-        v.push(line.parse::<i32>().unwrap());
-    }
-    v
 }
