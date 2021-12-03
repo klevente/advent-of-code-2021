@@ -76,37 +76,31 @@ fn calculate_least_common_bit_at_index(values: &Vec<Vec<u8>>, i: usize) -> u8 {
     least_common_bit(num_of_ones, values.len() / 2)
 }
 
-fn calculate_o2_generator_rating(reports: &Vec<Vec<u8>>) -> u32 {
-    let mut values = reports.clone();
+fn filter_on_bits_until_one_left(
+    values: &Vec<Vec<u8>>,
+    pred: fn(&Vec<Vec<u8>>, usize) -> u8,
+) -> u32 {
+    let mut values = values.clone();
     let mut current_idx = 0usize;
     while values.len() > 1 {
-        let most_common_bit = calculate_most_common_bit_at_index(&values, current_idx);
+        let desired_bit = pred(&values, current_idx);
         values = values
             .iter()
-            .filter(|bits| bits[current_idx] == most_common_bit)
+            .filter(|bits| bits[current_idx] == desired_bit)
             .cloned()
             .collect();
         current_idx += 1;
     }
     let result = values.first().unwrap();
-    println!("{:?}", result);
     bits_to_u32(result)
 }
 
+fn calculate_o2_generator_rating(reports: &Vec<Vec<u8>>) -> u32 {
+    filter_on_bits_until_one_left(&reports, calculate_most_common_bit_at_index)
+}
+
 fn calculate_co2_scrubber_rating(reports: &Vec<Vec<u8>>) -> u32 {
-    let mut values = reports.clone();
-    let mut current_idx = 0usize;
-    while values.len() > 1 {
-        let least_common_bit = calculate_least_common_bit_at_index(&values, current_idx);
-        values = values
-            .iter()
-            .filter(|bits| bits[current_idx] == least_common_bit)
-            .cloned()
-            .collect();
-        current_idx += 1;
-    }
-    let result = values.first().unwrap();
-    bits_to_u32(result)
+    filter_on_bits_until_one_left(&reports, calculate_least_common_bit_at_index)
 }
 
 fn life_support_rating(o2_generator_rating: u32, co2_scrubber_rating: u32) -> u32 {
@@ -131,13 +125,9 @@ fn main() {
             .collect::<Vec<u8>>()
     });
 
-    for report in &reports {
-        println!("{:?}", report);
-    }
-
     let power_consumption = calculate_power_consumption(&reports);
     println!("Power consumption is: {}", power_consumption);
 
     let life_support_rating = calculate_life_support_rating(&reports);
-    println!("Life supportrating is: {}", life_support_rating);
+    println!("Life support rating is: {}", life_support_rating);
 }
