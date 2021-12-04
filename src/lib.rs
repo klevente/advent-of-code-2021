@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::io::Read;
 use std::{fs::File, path::Path};
 
@@ -16,4 +17,9 @@ pub fn read_file_lines(path: impl AsRef<Path>) -> Vec<String> {
 pub fn read_file_lines_as<T>(path: impl AsRef<Path>, f: fn(&str) -> T) -> Vec<T> {
     let contents = read_file_to_string(path);
     contents.lines().map(f).collect()
+}
+
+fn vec_to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
+    v.try_into()
+        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
 }
