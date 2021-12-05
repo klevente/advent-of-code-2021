@@ -23,7 +23,14 @@ impl Line {
     }
 
     fn construct(coords: (u32, u32, u32, u32), line_type: LineType) -> Self {
-        let (from_x, from_y, to_x, to_y) = coords;
+        let (x1, y1, x2, y2) = coords;
+
+        let (from_x, from_y, to_x, to_y) = if x1 <= x2 {
+            (x1, y1, x2, y2)
+        } else {
+            (x2, y2, x1, y1)
+        };
+
         Self {
             from_x,
             from_y,
@@ -71,8 +78,8 @@ impl Line {
     }
 
     fn get_straight_line_positions(&self) -> Vec<(u32, u32)> {
-        let start_x = self.from_x.min(self.to_x);
-        let end_x = self.from_x.max(self.to_x);
+        let start_x = self.from_x; // as the points are already sorted by `x`, no comparison is necessary
+        let end_x = self.to_x;
         let start_y = self.from_y.min(self.to_y);
         let end_y = self.from_y.max(self.to_y);
 
@@ -88,17 +95,14 @@ impl Line {
     fn get_diagonal_line_positions(&self) -> Vec<(u32, u32)> {
         let mut v = Vec::new();
 
-        let (start_x, start_y, end_x, end_y) = if self.from_x <= self.to_x {
-            (self.from_x, self.from_y, self.to_x, self.to_y)
-        } else {
-            (self.to_x, self.to_y, self.from_x, self.from_y)
-        };
-
-        let dx = end_x - start_x;
-        let y_dir = (end_y as i32 - start_y as i32) / (dx) as i32;
+        let dx = self.to_x - self.from_x;
+        let y_dir = (self.to_y as i32 - self.from_y as i32) / (dx) as i32;
 
         for p in 0..=dx {
-            v.push((start_x + p, (start_y as i32 + (p as i32 * y_dir)) as u32))
+            v.push((
+                self.from_x + p,
+                (self.from_y as i32 + (p as i32 * y_dir)) as u32,
+            ))
         }
         v
     }
