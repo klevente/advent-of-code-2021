@@ -113,7 +113,7 @@ fn find_score_of_first_winning_board(
     nums: &Vec<u8>,
 ) -> Result<u32, String> {
     for n in nums {
-        for mut board in &mut boards {
+        for board in &mut boards {
             let outcome = board.draw(*n);
             if let Some(score) = outcome {
                 return Ok(score);
@@ -127,7 +127,7 @@ fn find_score_of_first_winning_board(
 fn find_score_of_last_winning_board(mut boards: Vec<Board>, nums: &Vec<u8>) -> Result<u32, String> {
     let mut final_score: Option<u32> = None;
     for n in nums {
-        for mut board in &mut boards {
+        for board in &mut boards {
             let outcome = board.draw(*n);
             if let Some(score) = outcome {
                 final_score.replace(score);
