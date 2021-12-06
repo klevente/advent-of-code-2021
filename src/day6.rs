@@ -91,9 +91,8 @@ impl FishSchool {
     }
 
     fn tick(&mut self) {
-        let num_to_spawn = self.num_of_fish_by_timer[0];
         self.num_of_fish_by_timer.rotate_left(1);
-        self.num_of_fish_by_timer[TIMER_RESET_VALUE] += num_to_spawn;
+        self.num_of_fish_by_timer[TIMER_RESET_VALUE] += self.num_of_fish_by_timer[NUM_OF_STATES];
     }
 
     fn num_of_all_fish(&self) -> u64 {
