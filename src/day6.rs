@@ -26,7 +26,9 @@ impl LanternFish {
     }
 
     fn spawn_new() -> LanternFish {
-        Self { timer: 8 }
+        Self {
+            timer: NUM_OF_STATES as u8,
+        }
     }
 }
 
