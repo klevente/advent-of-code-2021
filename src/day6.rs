@@ -91,7 +91,10 @@ impl FishSchool {
     }
 
     fn tick(&mut self) {
+        // decrement timer of each fish, wrapping around at `0` to `8`
         self.num_of_fish_by_timer.rotate_left(1);
+        // spawn `fish[8]` number of new fish at position `6`
+        // this logic is the reverse of the one given by the assignment, but is much easier to implement
         self.num_of_fish_by_timer[TIMER_RESET_VALUE] += self.num_of_fish_by_timer[NUM_OF_STATES];
     }
 
