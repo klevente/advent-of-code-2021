@@ -1,5 +1,5 @@
 use advent_of_code_2021::read_file_to_string;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const NUM_OF_STATES: usize = 8;
 const TIMER_RESET_VALUE: usize = 6;
