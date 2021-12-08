@@ -107,7 +107,7 @@ impl DisplayConfig {
     fn apply_mapping_to_output(&self, mappings: &HashMap<&str, u8>) -> Vec<Option<u8>> {
         self.output
             .iter()
-            .map(|s| mappings.get(s as &str).map(|d| *d))
+            .map(|s| mappings.get(s.as_str()).map(|d| *d))
             .collect()
     }
 
