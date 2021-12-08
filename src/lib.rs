@@ -1,13 +1,9 @@
 use std::convert::TryInto;
-use std::io::Read;
-use std::{fs::File, path::Path};
+use std::fs::read_to_string;
+use std::path::Path;
 
 pub fn read_file_to_string(path: impl AsRef<Path>) -> String {
-    let mut file = File::open(path).expect("Failed to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
-    contents
+    read_to_string(path).unwrap()
 }
 
 pub fn read_file_lines(path: impl AsRef<Path>) -> Vec<String> {
