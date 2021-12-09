@@ -1,4 +1,6 @@
+use array2d::Array2D;
 use std::convert::TryInto;
+use std::fmt::Display;
 use std::fs::read_to_string;
 use std::path::Path;
 
@@ -20,8 +22,16 @@ pub fn read_file_lines_filter_as<T>(path: impl AsRef<Path>, f: fn(&str) -> Optio
     contents.lines().filter_map(f).collect()
 }
 
-#[allow(dead_code)]
 pub fn vec_to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
     v.try_into()
         .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
+}
+
+pub fn print_2d_array<T: Clone + Display>(array: &Array2D<T>) {
+    for row in array.rows_iter() {
+        for column in row.into_iter() {
+            print!("{}", column);
+        }
+        println!();
+    }
 }
