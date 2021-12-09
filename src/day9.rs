@@ -30,7 +30,7 @@ impl HeightMap {
             for (x, column) in row.enumerate() {
                 if self.is_local_minimum(x, y) {
                     res.push((x, y, *column));
-                    println!("Found local minimum: ({}, {}) -> {}", y, x, column);
+                    // println!("Found local minimum: ({}, {}) -> {}", y, x, column);
                 }
             }
         }
@@ -46,6 +46,27 @@ impl HeightMap {
 
     pub fn print_map(&self) {
         print_2d_array(&self.tiles);
+    }
+
+    pub fn print_basin_map(&self) {
+        let local_minima = self.find_local_minima_values();
+
+        let tiles_in_a_basin = local_minima
+            .iter()
+            .map(|&(x, y, _)| self.get_basin(x, y))
+            .flatten()
+            .collect::<HashSet<_>>();
+
+        for (y, row) in self.tiles.rows_iter().enumerate() {
+            for (x, _) in row.enumerate() {
+                if tiles_in_a_basin.contains(&(x, y)) {
+                    print!("@");
+                } else {
+                    print!("_");
+                }
+            }
+            println!();
+        }
     }
 
     pub fn get_basin_sizes(&self) -> Vec<u32> {
@@ -99,12 +120,16 @@ impl HeightMap {
     }
 
     fn get_basin_size(&self, x: usize, y: usize) -> u32 {
-        let mut positions = HashSet::new();
-        self.get_basin_size_rec(x as i32, y as i32, &mut positions);
-        positions.len() as u32
+        self.get_basin(x, y).len() as u32
     }
 
-    fn get_basin_size_rec(&self, x: i32, y: i32, acc: &mut HashSet<(usize, usize)>) {
+    fn get_basin(&self, x: usize, y: usize) -> HashSet<(usize, usize)> {
+        let mut positions = HashSet::new();
+        self.get_basin_rec(x as i32, y as i32, &mut positions);
+        positions
+    }
+
+    fn get_basin_rec(&self, x: i32, y: i32, acc: &mut HashSet<(usize, usize)>) {
         if x < 0
             || x >= self.tiles.num_columns() as i32
             || y < 0
@@ -123,10 +148,10 @@ impl HeightMap {
 
         acc.insert((x as usize, y as usize));
 
-        self.get_basin_size_rec(x - 1, y, acc);
-        self.get_basin_size_rec(x, y - 1, acc);
-        self.get_basin_size_rec(x + 1, y, acc);
-        self.get_basin_size_rec(x, y + 1, acc);
+        self.get_basin_rec(x - 1, y, acc);
+        self.get_basin_rec(x, y - 1, acc);
+        self.get_basin_rec(x + 1, y, acc);
+        self.get_basin_rec(x, y + 1, acc);
     }
 
     fn is_top(&self, x: i32, y: i32) -> bool {
@@ -142,6 +167,8 @@ fn main() {
 
     let risk_value = height_map.calculate_risk_value();
     println!("The risk value is {}", risk_value);
+
+    height_map.print_basin_map();
 
     let result = height_map.calculate_product_of_three_largest_basin_sizes();
     println!("The product of the 3 largest basin sizes is {}", result);
