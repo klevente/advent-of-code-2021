@@ -1,22 +1,6 @@
 use advent_of_code_2021::read_file_lines_as;
 use itertools::Itertools;
 
-fn main() {
-    // let measurements = read_file("input/day1.txt");
-    let measurements = read_file_lines_as("input/day1.txt", |l| l.parse::<u32>().unwrap());
-
-    let num_of_increases = find_num_of_increases(&measurements);
-    println!(
-        "{} measurements are larger than the previous measurement.",
-        num_of_increases
-    );
-    let num_of_increases_sliding_window = find_num_of_increases_sliding_window(&measurements);
-    println!(
-        "{} measurement windows are larger than the previous measurement window.",
-        num_of_increases_sliding_window
-    );
-}
-
 fn find_num_of_increases(measurements: &Vec<u32>) -> u32 {
     /*let mut num_of_increases = 0;
     for (i, m_new) in measurements.iter().enumerate().skip(1) {
@@ -70,4 +54,19 @@ fn find_num_of_increases_sliding_window(measurements: &Vec<u32>) -> u32 {
         0,
         |acc, (m_old, m_new)| if m_new > m_old { acc + 1 } else { acc },
     )
+}
+
+fn main() {
+    let measurements = read_file_lines_as("input/day1.txt", |l| l.parse::<u32>().unwrap());
+
+    let num_of_increases = find_num_of_increases(&measurements);
+    println!(
+        "{} measurements are larger than the previous measurement.",
+        num_of_increases
+    );
+    let num_of_increases_sliding_window = find_num_of_increases_sliding_window(&measurements);
+    println!(
+        "{} measurement windows are larger than the previous measurement window.",
+        num_of_increases_sliding_window
+    );
 }

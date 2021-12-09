@@ -11,12 +11,10 @@ fn calculate_most_common_bits_in_all_indices(reports: &Vec<Vec<u8>>) -> Vec<u8> 
     }
 
     let half = reports.len() / 2;
-    let bits = num_of_ones
+    num_of_ones
         .iter()
         .map(|n| most_common_bit(*n, half))
-        .collect::<Vec<u8>>();
-
-    bits
+        .collect()
 }
 
 fn most_common_bit(n_ones: u32, half: usize) -> u8 {
@@ -122,7 +120,7 @@ fn main() {
     let reports = read_file_lines_as("input/day3.txt", |s| {
         s.chars()
             .map(|digit| digit.to_digit(2).unwrap() as u8)
-            .collect::<Vec<u8>>()
+            .collect::<Vec<_>>()
     });
 
     let power_consumption = calculate_power_consumption(&reports);

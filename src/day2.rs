@@ -30,7 +30,7 @@ struct Command {
 impl FromStr for Command {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tokens: Vec<&str> = s.split(' ').collect();
+        let tokens = s.split(' ').collect::<Vec<_>>();
         if tokens.len() != 2 {
             return Err(format!("Could not split '{}' into 2 pieces", s));
         }
