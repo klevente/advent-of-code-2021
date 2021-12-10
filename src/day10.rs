@@ -1,15 +1,28 @@
 use advent_of_code_2021::read_file_lines;
+use itertools::Itertools;
 use phf::phf_map;
 
-const SCORES: phf::Map<char, u32> = phf_map! {
+const ERROR_SCORES: phf::Map<char, u32> = phf_map! {
     ')' => 3,
     ']' => 57,
     '}' => 1197,
-    '>' => 25137
+    '>' => 25137,
 };
 
-fn get_score(c: &char) -> u32 {
-    *SCORES.get(c).unwrap()
+fn get_syntax_error_score(c: &char) -> u32 {
+    *ERROR_SCORES.get(c).unwrap()
+}
+
+const COMPLETION_SCORE_MULTIPLIER: u64 = 5;
+const COMPLETION_SCORES: phf::Map<char, u64> = phf_map! {
+    ')' => 1,
+    ']' => 2,
+    '}' => 3,
+    '>' => 4,
+};
+
+fn get_completion_score(c: &char) -> u64 {
+    *COMPLETION_SCORES.get(c).unwrap()
 }
 
 const PAIRS: phf::Map<char, char> = phf_map! {
@@ -27,28 +40,47 @@ fn map_opening_to_closing(c: &char) -> char {
     *PAIRS.get(c).unwrap()
 }
 
-fn check_line(s: &str) -> Result<(), char> {
+fn check_line(s: &str) -> Result<Vec<char>, char> {
     let mut chunks = Vec::new();
     for c in s.chars() {
         if is_opener(&c) {
-            chunks.push(c);
+            chunks.push(map_opening_to_closing(&c));
         } else {
-            let current_chunk = chunks.pop().unwrap();
-            let expected_char = map_opening_to_closing(&current_chunk);
+            let expected_char = chunks.pop().unwrap();
             if c != expected_char {
                 return Err(c);
             }
         }
     }
-    Ok(())
+    Ok(chunks)
 }
 
 fn calculate_syntax_error_score(lines: &Vec<String>) -> u32 {
-    let mut score = 0;
-    for line in lines.iter() {
-        check_line(&line).unwrap_or_else(|e| score += get_score(&e));
-    }
-    score
+    lines.iter().fold(0, |score, line| {
+        if let Some(c) = check_line(line).err() {
+            score + get_syntax_error_score(&c)
+        } else {
+            score
+        }
+    })
+}
+
+fn calc_completion_score_for(remaining: Vec<char>) -> u64 {
+    remaining.iter().rev().fold(0, |score, c| {
+        COMPLETION_SCORE_MULTIPLIER * score + get_completion_score(c)
+    })
+}
+
+fn calculate_completion_score(lines: &Vec<String>) -> u64 {
+    let mut sorted_scores_iter = lines
+        .iter()
+        .filter_map(|line| check_line(line).ok())
+        .map(calc_completion_score_for)
+        .sorted();
+
+    sorted_scores_iter
+        .nth(sorted_scores_iter.len() / 2)
+        .unwrap()
 }
 
 fn main() {
@@ -56,4 +88,7 @@ fn main() {
 
     let syntax_error_score = calculate_syntax_error_score(&lines);
     println!("The syntax error score is {}", syntax_error_score);
+
+    let completion_score = calculate_completion_score(&lines);
+    println!("The completion score is {}", completion_score);
 }
