@@ -4,7 +4,7 @@ use phf::phf_map;
 use std::collections::HashMap;
 
 // only `1` is 2-length, `4` is 4-length, `7` is 3-length and `8` is 7-length
-static TRIVIAL_DIGITS: phf::Map<u32, u8> = phf_map! {
+const TRIVIAL_DIGITS: phf::Map<u32, u8> = phf_map! {
     2u32 => 1,
     4u32 => 4,
     3u32 => 7,
