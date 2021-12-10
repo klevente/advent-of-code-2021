@@ -74,8 +74,7 @@ fn calc_completion_score_for(remaining: Vec<char>) -> u64 {
 fn calculate_completion_score(lines: &Vec<String>) -> u64 {
     let mut sorted_scores_iter = lines
         .iter()
-        .filter_map(|line| check_line(line).ok())
-        .map(calc_completion_score_for)
+        .filter_map(|line| check_line(line).map(calc_completion_score_for).ok())
         .sorted();
 
     sorted_scores_iter
