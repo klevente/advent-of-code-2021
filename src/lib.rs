@@ -36,6 +36,16 @@ pub fn print_2d_array<T: Clone + Display>(array: &Array2D<T>) {
     }
 }
 
+pub fn print_u8_2d_array_with_delim(array: &Array2D<u8>) {
+    for row in array.rows_iter() {
+        print!("|");
+        for column in row.into_iter() {
+            print!("{:2}|", column);
+        }
+        println!();
+    }
+}
+
 pub fn parse_2d_number_grid(s: &str) -> Array2D<u8> {
     let elements = &*s
         .lines()
