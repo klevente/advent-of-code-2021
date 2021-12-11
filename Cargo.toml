@@ -48,7 +48,7 @@ name = "day11"
 path = "src/day11.rs"
 
 [dependencies]
-array2d = "0.2.1"
+array2d = { git = "https://github.com/klevente/array2d" }
 itertools = "0.10.1"
 phf = { version = "0.10.0", features = ["macros"] }
 sscanf = "0.1.4"

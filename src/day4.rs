@@ -37,7 +37,7 @@ impl Board {
             .flatten()
             .map(Field::new);
 
-        let board = Array2D::from_iter_row_major(nums_iter, 5, 5);
+        let board = Array2D::from_iter_row_major(nums_iter, 5, 5).unwrap();
 
         Self { board, won: false }
     }

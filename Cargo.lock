@@ -24,8 +24,7 @@ dependencies = [
 [[package]]
 name = "array2d"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "224b2db9d3e7dd068c8b07b186076ee668ce38810d0ba12c80dacbcbb7cfc9e8"
+source = "git+https://github.com/klevente/array2d#982a4f099428287162e413c2c4c73bbd379563a0"
 
 [[package]]
 name = "cfg-if"

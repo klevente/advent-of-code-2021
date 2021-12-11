@@ -46,5 +46,5 @@ pub fn parse_2d_number_grid(s: &str) -> Array2D<u8> {
         })
         .collect::<Vec<_>>();
 
-    Array2D::from_rows(elements)
+    Array2D::from_rows(elements).unwrap()
 }
