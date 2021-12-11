@@ -1,4 +1,6 @@
-use advent_of_code_2021::{print_2d_array, read_file_to_string, vec_to_array};
+use advent_of_code_2021::{
+    parse_2d_number_grid, print_2d_array, read_file_to_string, vec_to_array,
+};
 use array2d::Array2D;
 use itertools::Itertools;
 use std::collections::HashSet;
@@ -10,17 +12,8 @@ struct HeightMap {
 
 impl HeightMap {
     pub fn parse(s: &str) -> Self {
-        let elements = &*s
-            .lines()
-            .map(|l| {
-                l.chars()
-                    .map(|d| d.to_digit(10).unwrap() as u8)
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-
         Self {
-            tiles: Array2D::from_rows(elements),
+            tiles: parse_2d_number_grid(s),
         }
     }
 

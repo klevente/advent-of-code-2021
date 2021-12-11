@@ -35,3 +35,16 @@ pub fn print_2d_array<T: Clone + Display>(array: &Array2D<T>) {
         println!();
     }
 }
+
+pub fn parse_2d_number_grid(s: &str) -> Array2D<u8> {
+    let elements = &*s
+        .lines()
+        .map(|l| {
+            l.chars()
+                .map(|d| d.to_digit(10).unwrap() as u8)
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    Array2D::from_rows(elements)
+}
