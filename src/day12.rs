@@ -67,6 +67,24 @@ fn format_path(path: &Vec<&Node>) -> String {
     path.iter().map(|n| n.name.clone()).join(",")
 }
 
+fn can_step_on_node(node: &Node, path: &Vec<&Node>, node_visitable_twice: &Option<&Node>) -> bool {
+    if node.node_type == NodeType::Start && !path.is_empty() {
+        return false;
+    } else if node.node_type == NodeType::Small {
+        return if let Some(node_visitable_twice) = node_visitable_twice {
+            if node == *node_visitable_twice {
+                let num = path.iter().filter(|&n| n == node_visitable_twice).count();
+                num < 2
+            } else {
+                !path.contains(&node)
+            }
+        } else {
+            !path.contains(&node)
+        };
+    }
+    true
+}
+
 struct CaveSystem {
     nodes: HashSet<Node>,
     edges: HashSet<Edge>,
@@ -90,11 +108,24 @@ impl CaveSystem {
         Self { nodes, edges }
     }
 
-    pub fn find_num_of_all_paths(&self) -> u32 {
+    pub fn find_num_of_all_paths_small_caves_count_once(&self) -> u32 {
         let mut found_paths: HashSet<String> = HashSet::new();
 
         let start = self.get_node_by_name("start").unwrap();
-        self.dfs_step(&start, Vec::new(), &mut found_paths);
+        self.dfs_step(&start, Vec::new(), &mut found_paths, None);
+
+        found_paths.len() as u32
+    }
+
+    pub fn find_num_of_all_paths_one_small_cave_counts_twice(&self) -> u32 {
+        let mut found_paths: HashSet<String> = HashSet::new();
+
+        let start = self.get_node_by_name("start").unwrap();
+        let small_nodes = self.nodes.iter().filter(|n| n.node_type == NodeType::Small);
+
+        for small_node in small_nodes {
+            self.dfs_step(&start, Vec::new(), &mut found_paths, Some(small_node));
+        }
 
         found_paths.len() as u32
     }
@@ -104,13 +135,12 @@ impl CaveSystem {
         node: &'a Node,
         mut path: Vec<&'a Node>,
         found_paths: &mut HashSet<String>,
+        node_visitable_twice: Option<&Node>,
     ) {
-        if node.node_type == NodeType::Small && path.contains(&node) {
+        if !can_step_on_node(node, &path, &node_visitable_twice) {
             return;
         }
-        if node.node_type == NodeType::Start && !path.is_empty() {
-            return;
-        }
+
         path.push(node);
         if node.node_type == NodeType::End {
             let path_string = format_path(&path);
@@ -120,7 +150,7 @@ impl CaveSystem {
         }
 
         for n in self.get_node_neighbours(node) {
-            self.dfs_step(&n, path.clone(), found_paths);
+            self.dfs_step(&n, path.clone(), found_paths, node_visitable_twice);
         }
     }
 
@@ -140,6 +170,16 @@ impl CaveSystem {
 fn main() {
     let input = read_file_to_string("input/day12.txt");
     let system = CaveSystem::parse(&input);
-    let num_of_paths = system.find_num_of_all_paths();
-    println!("The number of all paths found is {}", num_of_paths);
+    let num_of_paths_small_caves_count_once = system.find_num_of_all_paths_small_caves_count_once();
+    println!(
+        "The number of all paths found when small caves count only once is {}",
+        num_of_paths_small_caves_count_once
+    );
+
+    let num_of_paths_one_small_cave_counts_twice =
+        system.find_num_of_all_paths_one_small_cave_counts_twice();
+    println!(
+        "The number of all paths found when one small cave counts twice is {}",
+        num_of_paths_one_small_cave_counts_twice
+    );
 }
