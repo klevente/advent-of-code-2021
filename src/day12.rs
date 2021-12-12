@@ -68,21 +68,27 @@ fn format_path(path: &Vec<&Node>) -> String {
 }
 
 fn can_step_on_node(node: &Node, path: &Vec<&Node>, node_visitable_twice: &Option<&Node>) -> bool {
-    if node.node_type == NodeType::Start && !path.is_empty() {
-        return false;
+    return if node.node_type == NodeType::Start && !path.is_empty() {
+        // cannot step on `start`
+        false
     } else if node.node_type == NodeType::Small {
-        return if let Some(node_visitable_twice) = node_visitable_twice {
+        // check if there is a `Node` that can be visited twice
+        if let Some(node_visitable_twice) = node_visitable_twice {
             if node == *node_visitable_twice {
-                let num = path.iter().filter(|&n| n == node_visitable_twice).count();
-                num < 2
+                // if the current `Node` is the one that can be visited twice, count its occurrences, and return `true` if it is less than 2
+                path.iter().filter(|&n| n == node_visitable_twice).count() < 2
             } else {
+                // if the current `Node` is not visitable twice, check if it has already been visited, return `false` if it has been
                 !path.contains(&node)
             }
         } else {
+            // if there is no twice-visitable `Node`, check if the `Node` has already been visited, return `false` if it has been
             !path.contains(&node)
-        };
-    }
-    true
+        }
+    } else {
+        // if no other conditions are true, the `Node` can be stepped on
+        true
+    };
 }
 
 struct CaveSystem {
@@ -124,6 +130,7 @@ impl CaveSystem {
         let small_nodes = self.nodes.iter().filter(|n| n.node_type == NodeType::Small);
 
         for small_node in small_nodes {
+            // select each small `Node` to be visitable twice for generating paths
             self.dfs_step(&start, Vec::new(), &mut found_paths, Some(small_node));
         }
 
