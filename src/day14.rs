@@ -1,10 +1,10 @@
 use advent_of_code_2021::read_file_lines_extract_first;
-use itertools::FoldWhile::{Continue, Done};
-use itertools::{Itertools, MinMaxResult};
+use itertools::{
+    FoldWhile::{Continue, Done},
+    Itertools, MinMaxResult,
+};
 use sscanf::scanf;
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::str::FromStr;
+use std::{collections::HashMap, hash::Hash, str::FromStr};
 
 struct RuleSlow {
     pattern_1: char,
