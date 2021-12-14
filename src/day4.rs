@@ -1,4 +1,4 @@
-use advent_of_code_2021::read_file_lines;
+use advent_of_code_2021::read_file_lines_extract_first;
 use array2d::Array2D;
 
 #[derive(Clone, Copy, Debug)]
@@ -137,24 +137,8 @@ fn find_score_of_last_winning_board(mut boards: Vec<Board>, nums: &Vec<u8>) -> R
     final_score.ok_or("No boards won after drawing all numbers.".to_string())
 }
 
-fn read_and_transform_input_lines(path: &str) -> (String, Vec<String>) {
-    let mut whole = read_file_lines(path)
-        .iter()
-        .filter_map(|line| {
-            if line.is_empty() {
-                None
-            } else {
-                Some(line.to_owned())
-            }
-        })
-        .collect::<Vec<_>>();
-    let draws = whole.remove(0);
-
-    (draws, whole)
-}
-
 fn parse_file(path: &str) -> (Vec<u8>, Vec<Board>) {
-    let (draws, boards_raw) = read_and_transform_input_lines(path);
+    let (draws, boards_raw) = read_file_lines_extract_first(path);
     let draws = parse_draws(&draws);
     let boards = boards_raw
         .chunks_exact(5)
