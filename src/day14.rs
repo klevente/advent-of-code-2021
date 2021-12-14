@@ -3,6 +3,7 @@ use itertools::FoldWhile::{Continue, Done};
 use itertools::{Itertools, MinMaxResult};
 use sscanf::scanf;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::str::FromStr;
 
 struct RuleSlow {
@@ -45,9 +46,17 @@ impl std::fmt::Display for RuleSlow {
     }
 }
 
+fn increment_map_entry<K: Eq + Hash, V: std::ops::AddAssign + Default>(
+    map: &mut HashMap<K, V>,
+    k: K,
+    v: V,
+) {
+    *map.entry(k).or_insert(V::default()) += v;
+}
+
 fn char_frequencies_of(s: &str) -> HashMap<char, usize> {
     s.chars().fold(HashMap::new(), |mut acc, c| {
-        *acc.entry(c).or_insert(0) += 1;
+        increment_map_entry(&mut acc, c, 1);
         acc
     })
 }
@@ -180,7 +189,7 @@ impl PolymerFast {
             s.chars()
                 .tuple_windows::<(_, _)>()
                 .fold(HashMap::new(), |mut acc, next| {
-                    *acc.entry(next).or_insert(0) += 1;
+                    increment_map_entry(&mut acc, next, 1);
                     acc
                 });
 
@@ -209,15 +218,18 @@ impl PolymerFast {
     }
 
     fn apply_rules(&mut self, rules: &[RuleFast]) {
-        let mut result = HashMap::new();
-        for (pat, i) in &self.active_rules {
-            if let Some(rule) = rules.iter().find(|r| r.pattern() == *pat) {
-                let (res1, res2) = rule.apply_rule();
-                *result.entry(res1).or_insert(0) += i;
-                *result.entry(res2).or_insert(0) += i;
-                *self.element_frequencies.entry(rule.new).or_insert(0) += i;
-            }
-        }
+        let result = self
+            .active_rules
+            .iter()
+            .fold(HashMap::new(), |mut acc, (&pat, &i)| {
+                if let Some(rule) = rules.iter().find(|r| r.pattern() == pat) {
+                    let (res1, res2) = rule.apply_rule();
+                    increment_map_entry(&mut acc, res1, i);
+                    increment_map_entry(&mut acc, res2, i);
+                    increment_map_entry(&mut self.element_frequencies, rule.new, i);
+                }
+                acc
+            });
 
         self.active_rules = result;
     }
