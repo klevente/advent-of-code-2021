@@ -5,13 +5,13 @@ use sscanf::scanf;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-struct Rule {
+struct RuleSlow {
     pattern_1: char,
     pattern_2: char,
     insert: char,
 }
 
-impl Rule {
+impl RuleSlow {
     pub fn is_applicable(&self, c1: char, c2: char) -> Option<char> {
         if c1 == self.pattern_1 && c2 == self.pattern_2 {
             Some(self.insert)
@@ -21,7 +21,7 @@ impl Rule {
     }
 }
 
-impl FromStr for Rule {
+impl FromStr for RuleSlow {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -35,7 +35,7 @@ impl FromStr for Rule {
     }
 }
 
-impl std::fmt::Display for Rule {
+impl std::fmt::Display for RuleSlow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -53,11 +53,11 @@ fn char_frequencies_of(s: &str) -> HashMap<char, usize> {
 }
 
 #[derive(Clone)]
-struct Polymer {
+struct PolymerSlow {
     elements: String,
 }
 
-impl Polymer {
+impl PolymerSlow {
     pub fn new(elements: String) -> Self {
         Self { elements }
     }
@@ -71,7 +71,7 @@ impl Polymer {
         }
     }
 
-    pub fn apply_rules_n_times(self, rules: &[Rule], n: usize) -> Self {
+    pub fn apply_rules_n_times(self, rules: &[RuleSlow], n: usize) -> Self {
         println!("Original:");
         println!("{}", self);
         let mut this = self;
@@ -84,7 +84,7 @@ impl Polymer {
         this
     }
 
-    pub fn apply_rules(mut self, rules: &[Rule]) -> Self {
+    pub fn apply_rules(mut self, rules: &[RuleSlow]) -> Self {
         let chars_to_insert = self.collect_chars_to_insert(rules);
 
         for (i, c) in chars_to_insert {
@@ -94,7 +94,7 @@ impl Polymer {
         self
     }
 
-    fn collect_chars_to_insert(&self, rules: &[Rule]) -> Vec<(usize, char)> {
+    fn collect_chars_to_insert(&self, rules: &[RuleSlow]) -> Vec<(usize, char)> {
         self.elements.char_indices().tuple_windows::<(_, _)>().fold(
             Vec::new(),
             |mut acc, ((_i1, c1), (i2, c2))| {
@@ -107,7 +107,7 @@ impl Polymer {
         )
     }
 
-    fn is_any_rule_applicable(c1: char, c2: char, rules: &[Rule]) -> Option<char> {
+    fn is_any_rule_applicable(c1: char, c2: char, rules: &[RuleSlow]) -> Option<char> {
         rules
             .iter()
             .fold_while(None, |_, r| {
@@ -118,25 +118,22 @@ impl Polymer {
     }
 }
 
-impl std::fmt::Display for Polymer {
+impl std::fmt::Display for PolymerSlow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.elements)
     }
 }
 
-fn parse_file(path: &str) -> (Polymer, Vec<Rule>) {
-    let (polymer, rules) = read_file_lines_extract_first(path);
-
-    let polymer = Polymer::new(polymer);
+fn calculate_most_common_minus_least_common_elements_after_10_steps_slow(
+    polymer: String,
+    rules: &[String],
+) {
+    let polymer = PolymerSlow::new(polymer);
     let rules = rules
         .iter()
-        .map(|s| Rule::from_str(s).unwrap())
+        .map(|s| RuleSlow::from_str(s).unwrap())
         .collect::<Vec<_>>();
 
-    (polymer, rules)
-}
-
-fn calculate_most_common_minus_least_common_after_10_steps(polymer: Polymer, rules: &[Rule]) {
     let result = polymer.apply_rules_n_times(&rules, 10);
     let value = result.most_common_element_minus_least_common_element();
     println!(
@@ -145,8 +142,108 @@ fn calculate_most_common_minus_least_common_after_10_steps(polymer: Polymer, rul
     );
 }
 
-fn main() {
-    let (polymer, rules) = parse_file("input/day14.txt");
+#[derive(Debug)]
+struct RuleFast {
+    p1: char,
+    p2: char,
+    new: char,
+}
 
-    calculate_most_common_minus_least_common_after_10_steps(polymer.clone(), &rules);
+impl RuleFast {
+    pub fn pattern(&self) -> (char, char) {
+        (self.p1, self.p2)
+    }
+
+    pub fn apply_rule(&self) -> ((char, char), (char, char)) {
+        ((self.p1, self.new), (self.new, self.p2))
+    }
+}
+
+impl FromStr for RuleFast {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (p1, p2, new) = scanf!(s, "{}{} -> {}", char, char, char).ok_or("Invalid format")?;
+
+        Ok(Self { p1, p2, new })
+    }
+}
+
+#[derive(Debug)]
+struct PolymerFast {
+    active_rules: HashMap<(char, char), usize>,
+    element_frequencies: HashMap<char, usize>,
+}
+
+impl PolymerFast {
+    pub fn parse(s: &str) -> Self {
+        let active_rules =
+            s.chars()
+                .tuple_windows::<(_, _)>()
+                .fold(HashMap::new(), |mut acc, next| {
+                    *acc.entry(next).or_insert(0) += 1;
+                    acc
+                });
+
+        let element_frequencies = char_frequencies_of(s);
+
+        Self {
+            active_rules,
+            element_frequencies,
+        }
+    }
+
+    pub fn most_common_element_minus_least_common_element(&self) -> usize {
+        let minmax = self.element_frequencies.values().minmax();
+        match minmax {
+            MinMaxResult::MinMax(min, max) => max - min,
+            _ => 0,
+        }
+    }
+
+    pub fn apply_rules_n_times(&mut self, rules: &[RuleFast], n: usize) {
+        for step in 1..=n {
+            println!("Step {}...", step);
+            self.apply_rules(rules);
+            println!("Step {} complete.", step);
+        }
+    }
+
+    fn apply_rules(&mut self, rules: &[RuleFast]) {
+        let mut result = HashMap::new();
+        for (pat, i) in &self.active_rules {
+            if let Some(rule) = rules.iter().find(|r| r.pattern() == *pat) {
+                let (res1, res2) = rule.apply_rule();
+                *result.entry(res1).or_insert(0) += i;
+                *result.entry(res2).or_insert(0) += i;
+                *self.element_frequencies.entry(rule.new).or_insert(0) += i;
+            }
+        }
+
+        self.active_rules = result;
+    }
+}
+
+fn calculate_most_common_minus_least_common_elements_after_40_steps_fast(
+    polymer: &str,
+    rules: &[String],
+) {
+    let mut polymer = PolymerFast::parse(polymer);
+    let rules = rules
+        .iter()
+        .map(|s| RuleFast::from_str(s).unwrap())
+        .collect::<Vec<_>>();
+
+    polymer.apply_rules_n_times(&rules, 40);
+
+    let value = polymer.most_common_element_minus_least_common_element();
+    println!(
+        "The quantity of the most common element minus the least common element after 40 steps is {}",
+        value
+    );
+}
+
+fn main() {
+    let (polymer, rules) = read_file_lines_extract_first("input/day14.txt");
+    calculate_most_common_minus_least_common_elements_after_10_steps_slow(polymer.clone(), &rules);
+    calculate_most_common_minus_least_common_elements_after_40_steps_fast(&polymer, &rules);
 }
