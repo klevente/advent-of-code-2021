@@ -1,5 +1,4 @@
 use advent_of_code_2021::read_file_lines_as;
-use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -30,14 +29,13 @@ struct Command {
 impl FromStr for Command {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tokens = s.split(' ').collect::<Vec<_>>();
-        if tokens.len() != 2 {
-            return Err(format!("Could not split '{}' into 2 pieces", s));
-        }
-        let dir = Direction::from_str(tokens[0])?;
-        let amount = tokens[1]
+        let (dir, amount) = s
+            .split_once(' ')
+            .ok_or(format!("Could not split '{}' into 2 pieces", s))?;
+        let dir = Direction::from_str(dir)?;
+        let amount = amount
             .parse::<u32>()
-            .map_err(|_| format!("Could not parse '{}' as amount", tokens[1]))?;
+            .map_err(|_| format!("Could not parse '{}' as amount", amount))?;
         Ok(Command { dir, amount })
     }
 }
@@ -55,7 +53,7 @@ struct Submarine {
     aim: u32,
 }
 
-impl Display for Submarine {
+impl std::fmt::Display for Submarine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(position: {}, depth: {})", self.position, self.depth)
     }
