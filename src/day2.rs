@@ -76,7 +76,7 @@ impl Submarine {
         use Direction::*;
         let Command { dir, amount } = command;
 
-        // first assignemnt
+        // first assignment
         /*match dir {
             Forward => self.position += amount,
             Down => self.depth += amount,
