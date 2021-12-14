@@ -145,18 +145,8 @@ fn calculate_most_common_minus_least_common_after_10_steps(polymer: Polymer, rul
     );
 }
 
-fn calculate_most_common_minus_least_common_after_40_steps(polymer: Polymer, rules: &[Rule]) {
-    let result = polymer.apply_rules_n_times(&rules, 40);
-    let value = result.most_common_element_minus_least_common_element();
-    println!(
-        "The quantity of the most common element minus the least common element after 40 steps is {}",
-        value
-    );
-}
-
 fn main() {
     let (polymer, rules) = parse_file("input/day14.txt");
 
     calculate_most_common_minus_least_common_after_10_steps(polymer.clone(), &rules);
-    calculate_most_common_minus_least_common_after_40_steps(polymer, &rules);
 }
