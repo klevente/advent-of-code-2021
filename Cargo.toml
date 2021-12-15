@@ -59,6 +59,10 @@ path = "src/day13.rs"
 name = "day14"
 path = "src/day14.rs"
 
+[[bin]]
+name = "day15"
+path = "src/day15.rs"
+
 [dependencies]
 array2d = { git = "https://github.com/klevente/array2d" }
 itertools = "0.10.1"
