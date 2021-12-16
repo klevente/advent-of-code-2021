@@ -87,7 +87,7 @@ fn process_packet(packet: &str) -> (usize, usize, &str) {
             5 => compare_two_element_slice(&values, PartialOrd::gt),
             6 => compare_two_element_slice(&values, PartialOrd::lt),
             7 => compare_two_element_slice(&values, PartialEq::eq),
-            _ => panic!("Type id of {} is invalid!", type_id),
+            _ => panic!("Type id of {} is invalid", type_id),
         };
         (sum_of_versions + version, value, packet)
     }
