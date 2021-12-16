@@ -59,25 +59,47 @@ fn parse_and_remove_flag(str: &str) -> (bool, &str) {
     split_and_map_head(str, 1, binary_str_to_bool)
 }
 
-fn process_packet(packet: &str) -> (usize, &str) {
+fn compare_two_element_slice<T: PartialOrd, F: Fn(&T, &T) -> bool>(values: &[T], cmp: F) -> usize {
+    let a = values.first().unwrap();
+    let b = values.last().unwrap();
+
+    if cmp(a, b) {
+        1
+    } else {
+        0
+    }
+}
+
+fn process_packet(packet: &str) -> (usize, usize, &str) {
     let (version, packet) = parse_and_remove_n_digits(packet, 3);
     let (type_id, packet) = parse_and_remove_n_digits(packet, 3);
 
     if type_id == 4 {
-        (version, process_literal(packet))
+        let (value, packet) = process_literal(packet);
+        (version, value, packet)
     } else {
-        let (sum, p) = process_operator(packet);
-        (sum + version, p)
+        let (sum_of_versions, values, packet) = process_operator(packet);
+        let value = match type_id {
+            0 => values.iter().sum(),
+            1 => values.iter().product(),
+            2 => *values.iter().min().unwrap(),
+            3 => *values.iter().max().unwrap(),
+            5 => compare_two_element_slice(&values, PartialOrd::gt),
+            6 => compare_two_element_slice(&values, PartialOrd::lt),
+            7 => compare_two_element_slice(&values, PartialEq::eq),
+            _ => panic!("Type id of {} is invalid!", type_id),
+        };
+        (sum_of_versions + version, value, packet)
     }
 }
 
-fn process_literal(packet: &str) -> &str {
+fn process_literal(packet: &str) -> (usize, &str) {
+    let mut value_str = String::new();
     let (mut group, mut packet) = split_off_n_digits(packet, 5);
-    let mut value = String::new();
 
     loop {
         let (has_more, literal_part) = parse_and_remove_flag(group);
-        value += literal_part;
+        value_str += literal_part;
         if !has_more {
             break;
         }
@@ -86,13 +108,12 @@ fn process_literal(packet: &str) -> &str {
         packet = p;
     }
 
-    dbg!(&value);
-    let numeric_value = binary_str_to_usize(&value);
-    dbg!(numeric_value);
-    packet
+    let numeric_value = binary_str_to_usize(&value_str);
+
+    (numeric_value, packet)
 }
 
-fn process_operator(packet: &str) -> (usize, &str) {
+fn process_operator(packet: &str) -> (usize, Vec<usize>, &str) {
     let (is_length_type_num_of_sub_packets, packet) = parse_and_remove_flag(packet);
 
     if is_length_type_num_of_sub_packets {
@@ -104,40 +125,48 @@ fn process_operator(packet: &str) -> (usize, &str) {
     }
 }
 
-fn process_sub_packets_with_total_length(packet: &str, length: usize) -> (usize, &str) {
+fn process_sub_packets_with_total_length(packet: &str, length: usize) -> (usize, Vec<usize>, &str) {
     let original_length = packet.len();
+
     let mut new_length = original_length;
     let mut sum_of_versions = 0;
+    let mut values = Vec::new();
     let mut packet = packet;
+
     println!("Processing sub packets of size {}", length);
     while original_length - length != new_length {
         println!("Processing sub packet");
-        let (sum, p) = process_packet(packet);
+        let (sum, value, p) = process_packet(packet);
         packet = p;
         sum_of_versions += sum;
+        values.push(value);
         new_length = packet.len();
     }
 
-    (sum_of_versions, packet)
+    (sum_of_versions, values, packet)
 }
 
-fn process_sub_packets_num(packet: &str, n: usize) -> (usize, &str) {
+fn process_sub_packets_num(packet: &str, n: usize) -> (usize, Vec<usize>, &str) {
     let mut sum_of_versions = 0;
+    let mut values = Vec::new();
     let mut packet = packet;
+
     println!("Processing {} sub packets", n);
     for i in 0..n {
         println!("Processing sub packet {}", i);
-        let (sum, p) = process_packet(packet);
+        let (sum, value, p) = process_packet(packet);
         packet = p;
         sum_of_versions += sum;
+        values.push(value);
         println!("Processed sub packet {}", i);
     }
 
-    (sum_of_versions, packet)
+    (sum_of_versions, values, packet)
 }
 
 fn main() {
     let packet_str = parse_input_as_binary_str("input/day16.txt");
-    let (sum_of_versions, _) = process_packet(&packet_str);
+    let (sum_of_versions, value, _) = process_packet(&packet_str);
     println!("The sum of all version numbers is {}", sum_of_versions);
+    println!("The resulting value is {}", value);
 }
