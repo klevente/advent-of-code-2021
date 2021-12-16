@@ -1,5 +1,6 @@
 use advent_of_code_2021::{parse_2d_number_grid, read_file_to_string};
 use array2d::Array2D;
+use std::collections::HashSet;
 use std::time::Instant;
 
 type Coords = (usize, usize);
@@ -54,19 +55,24 @@ impl Map {
             .set(0, 1, *self.tiles.get(0, 1).unwrap() as usize)
             .unwrap();
 
-        let mut correction_happened = true;
-        while correction_happened {
-            correction_happened = false;
-            correction_happened |= self.step(&mut risk_values_in_tiles);
+        let mut working_with: HashSet<Coords> = HashSet::new();
+        working_with.insert((1, 0));
+        working_with.insert((0, 1));
+        while !working_with.is_empty() {
+            working_with = self.step(&mut risk_values_in_tiles, working_with);
         }
 
         let (m_y, m_x) = self.end;
         *risk_values_in_tiles.get(m_y, m_x).unwrap()
     }
 
-    fn step(&self, risk_values: &mut Array2D<usize>) -> bool {
-        let mut correction_happened = false;
-        for (row, column) in self.tiles.indices_row_major() {
+    fn step(
+        &self,
+        risk_values: &mut Array2D<usize>,
+        working_with: HashSet<Coords>,
+    ) -> HashSet<Coords> {
+        let mut changed = HashSet::new();
+        for (column, row) in working_with {
             let risk_value = *risk_values.get(row, column).unwrap();
 
             let neighbours = self.get_neighbours((column, row));
@@ -76,12 +82,12 @@ impl Map {
                 let potential_risk = risk_value + *self.tiles.get(*n_y, *n_x).unwrap() as usize;
                 if potential_risk < neighbour_risk_value {
                     risk_values.set(*n_y, *n_x, potential_risk).unwrap();
-                    correction_happened = true;
+                    changed.insert((*n_x, *n_y));
                 }
             }
         }
 
-        correction_happened
+        changed
     }
 
     fn get_neighbours(&self, tile: Coords) -> Vec<Coords> {
