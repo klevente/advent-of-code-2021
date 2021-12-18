@@ -108,7 +108,7 @@ impl Trench {
             println!("Throwing probe: ({},{})", &probe.vx, &probe.vy);
             let result = self.throw_probe(probe);
             println!("Result of throw: {:?}", &result);
-            results.push((result.map(|r| (r, vx, vy))));
+            results.push(result.map(|r| (r, vx, vy)));
         }
 
         results
