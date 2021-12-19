@@ -1,5 +1,5 @@
 use advent_of_code_2021::read_file_lines_as;
-use itertools::{max, Itertools};
+use itertools::Itertools;
 
 type Expression = Vec<Token>;
 
@@ -250,6 +250,6 @@ fn find_largest_magnitude_from_sum(expressions: &Vec<Expression>) {
 
 fn main() {
     let expressions = read_file_lines_as("input/day18.txt", parse_expression);
-    // find_homework_magnitude(expressions.clone());
+    find_homework_magnitude(expressions.clone());
     find_largest_magnitude_from_sum(&expressions);
 }
