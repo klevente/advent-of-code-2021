@@ -1,4 +1,4 @@
-use advent_of_code_2021::{read_file_lines, read_file_to_string};
+use advent_of_code_2021::read_file_to_string;
 use itertools::Itertools;
 use sscanf::scanf;
 use std::collections::{HashMap, HashSet};
@@ -208,12 +208,11 @@ impl<'a, 'b> std::ops::Sub<&'b Vec3> for &'a Vec3 {
 struct Vec3WithEnds {
     v: Vec3,
     start: Vec3,
-    end: Vec3,
 }
 
 impl Vec3WithEnds {
-    pub fn new(v: Vec3, start: Vec3, end: Vec3) -> Self {
-        Self { v, start, end }
+    pub fn new(v: Vec3, start: Vec3) -> Self {
+        Self { v, start }
     }
 }
 
@@ -243,7 +242,7 @@ impl Scanner {
             .filter_map(|p| {
                 if p != starting_point {
                     let vector = p - starting_point;
-                    Some(Vec3WithEnds::new(vector, *starting_point, *p))
+                    Some(Vec3WithEnds::new(vector, *starting_point))
                 } else {
                     None
                 }
