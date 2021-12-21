@@ -127,9 +127,9 @@ impl Game {
 }
 
 struct QuantumGame {
-    //               p1s p1p p2s p2p
     // p1: player 1, p2: player 2
     // s: score, p: position
+    //               p1s p1p p2s p2p
     states: HashMap<(u8, u8, u8, u8), u64>,
     player_1_won: u64,
     player_2_won: u64,
@@ -151,7 +151,7 @@ impl QuantumGame {
         }
     }
 
-    pub fn simulate(&mut self) -> u64 {
+    pub fn play(&mut self) -> u64 {
         let mut is_player_1_turn = true;
         while self.is_not_finished() {
             self.step(is_player_1_turn);
@@ -254,7 +254,7 @@ fn main() {
     println!("The product of the losing player's score and number of dice rolls in the practice game is {}", score_of_losing_player_times_num_of_dice_rolls);
 
     let mut quantum_game = QuantumGame::parse(&input);
-    let num_of_wins_for_player_who_wins_more = quantum_game.simulate();
+    let num_of_wins_for_player_who_wins_more = quantum_game.play();
     println!(
         "The number of wins for the player who wins more in the quantum game is {}",
         num_of_wins_for_player_who_wins_more
