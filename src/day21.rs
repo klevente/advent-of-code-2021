@@ -1,5 +1,7 @@
 use advent_of_code_2021::read_file_to_string;
+use itertools::Itertools;
 use sscanf::scanf;
+use std::collections::HashMap;
 use std::str::FromStr;
 
 struct Player {
@@ -124,11 +126,137 @@ impl Game {
     }
 }
 
+struct QuantumGame {
+    //               p1s p1p p2s p2p
+    // p1: player 1, p2: player 2
+    // s: score, p: position
+    states: HashMap<(u8, u8, u8, u8), u64>,
+    player_1_won: u64,
+    player_2_won: u64,
+}
+
+impl QuantumGame {
+    pub fn parse(s: &str) -> Self {
+        let mut lines = s.lines();
+        let player_1_pos = Player::from_str(lines.next().unwrap()).unwrap().position;
+        let player_2_pos = Player::from_str(lines.next().unwrap()).unwrap().position;
+
+        let mut states = Self::generate_empty_state_map();
+        states.insert((0, player_1_pos, 0, player_2_pos), 1);
+
+        QuantumGame {
+            states,
+            player_1_won: 0,
+            player_2_won: 0,
+        }
+    }
+
+    pub fn simulate(&mut self) -> u64 {
+        let mut is_player_1_turn = true;
+        while self.is_not_finished() {
+            self.step(is_player_1_turn);
+            is_player_1_turn = !is_player_1_turn;
+        }
+
+        self.player_1_won.max(self.player_2_won)
+    }
+
+    fn is_not_finished(&self) -> bool {
+        self.states.iter().any(|(_, v)| *v > 0)
+    }
+
+    fn step(&mut self, is_player_1_turn: bool) {
+        let mut new_states = Self::generate_empty_state_map();
+
+        let throws = Self::generate_dice_throws();
+
+        for ((p1s, p1p, p2s, p2p), n) in &self.states {
+            if *n == 0 {
+                continue;
+            }
+            for throw in &throws {
+                if is_player_1_turn {
+                    let (new_pos, new_score) =
+                        Self::calculate_new_position_and_score(p1p, p1s, throw);
+
+                    *new_states
+                        .get_mut(&(new_score, new_pos, *p2s, *p2p))
+                        .unwrap() += n;
+                } else {
+                    let (new_pos, new_score) =
+                        Self::calculate_new_position_and_score(p2p, p2s, throw);
+
+                    *new_states
+                        .get_mut(&(*p1s, *p1p, new_score, new_pos))
+                        .unwrap() += n;
+                }
+            }
+        }
+
+        let mut num_of_wins = 0;
+        for ((p1s, _p1p, p2s, _p2p), n) in &mut new_states {
+            if is_player_1_turn {
+                if *p1s == 21 {
+                    num_of_wins += *n;
+                    *n = 0;
+                }
+            } else {
+                if *p2s == 21 {
+                    num_of_wins += *n;
+                    *n = 0;
+                }
+            }
+        }
+
+        if is_player_1_turn {
+            self.player_1_won += num_of_wins;
+        } else {
+            self.player_2_won += num_of_wins;
+        }
+
+        self.states = new_states;
+    }
+
+    fn calculate_new_position_and_score(position: &u8, score: &u8, throw: &u8) -> (u8, u8) {
+        let new_position = (position + throw - 1) % 10 + 1;
+        let new_score = (score + new_position).min(21);
+
+        (new_position, new_score)
+    }
+
+    fn generate_dice_throws() -> Vec<u8> {
+        let range = 1u8..=3;
+        range
+            .clone()
+            .cartesian_product(range.clone())
+            .cartesian_product(range)
+            .map(|((x, y), z)| x + y + z)
+            .sorted()
+            .collect::<Vec<_>>()
+    }
+
+    fn generate_empty_state_map() -> HashMap<(u8, u8, u8, u8), u64> {
+        let player_1_state = (0..=21).into_iter().cartesian_product(1..=10);
+        let player_2_state = player_1_state.clone();
+        let state_iter = player_1_state
+            .cartesian_product(player_2_state)
+            .map(|((p1s, p1p), (p2s, p2p))| ((p1s, p1p, p2s, p2p), 0));
+
+        HashMap::from_iter(state_iter)
+    }
+}
+
 fn main() {
     let input = read_file_to_string("input/day21.txt");
 
     let mut game = Game::parse(&input);
-    let result = game.play();
+    let score_of_losing_player_times_num_of_dice_rolls = game.play();
+    println!("The product of the losing player's score and number of dice rolls in the practice game is {}", score_of_losing_player_times_num_of_dice_rolls);
 
-    dbg!(result);
+    let mut quantum_game = QuantumGame::parse(&input);
+    let num_of_wins_for_player_who_wins_more = quantum_game.simulate();
+    println!(
+        "The number of wins for the player who wins more in the quantum game is {}",
+        num_of_wins_for_player_who_wins_more
+    );
 }
