@@ -168,23 +168,23 @@ impl QuantumGame {
     fn step(&mut self, is_player_1_turn: bool) {
         let mut new_states = Self::generate_empty_state_map();
 
-        let throws = Self::generate_dice_throws();
+        let rolls = Self::generate_dice_rolls();
 
         for ((p1s, p1p, p2s, p2p), n) in &self.states {
             if *n == 0 {
                 continue;
             }
-            for throw in &throws {
+            for roll in &rolls {
                 if is_player_1_turn {
                     let (new_pos, new_score) =
-                        Self::calculate_new_position_and_score(p1p, p1s, throw);
+                        Self::calculate_new_position_and_score(p1p, p1s, roll);
 
                     *new_states
                         .get_mut(&(new_score, new_pos, *p2s, *p2p))
                         .unwrap() += n;
                 } else {
                     let (new_pos, new_score) =
-                        Self::calculate_new_position_and_score(p2p, p2s, throw);
+                        Self::calculate_new_position_and_score(p2p, p2s, roll);
 
                     *new_states
                         .get_mut(&(*p1s, *p1p, new_score, new_pos))
@@ -217,14 +217,14 @@ impl QuantumGame {
         self.states = new_states;
     }
 
-    fn calculate_new_position_and_score(position: &u8, score: &u8, throw: &u8) -> (u8, u8) {
-        let new_position = (position + throw - 1) % 10 + 1;
+    fn calculate_new_position_and_score(position: &u8, score: &u8, roll: &u8) -> (u8, u8) {
+        let new_position = (position + roll - 1) % 10 + 1;
         let new_score = (score + new_position).min(21);
 
         (new_position, new_score)
     }
 
-    fn generate_dice_throws() -> Vec<u8> {
+    fn generate_dice_rolls() -> Vec<u8> {
         let range = 1u8..=3;
         range
             .clone()
