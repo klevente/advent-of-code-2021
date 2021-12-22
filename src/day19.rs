@@ -1,8 +1,36 @@
 use advent_of_code_2021::read_file_to_string;
 use itertools::Itertools;
+use phf::phf_map;
 use sscanf::scanf;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
+
+const ORIENTATIONS: phf::Map<u8, fn(&Vec3) -> Vec3> = phf_map! {
+    0u8  => |v| Vec3::new( v.x(),  v.y(),  v.z()),
+    1u8  => |v| Vec3::new( v.x(), -v.z(),  v.y()),
+    2u8  => |v| Vec3::new( v.x(), -v.y(), -v.z()),
+    3u8  => |v| Vec3::new( v.x(),  v.z(), -v.y()),
+    4u8  => |v| Vec3::new(-v.y(),  v.x(),  v.z()),
+    5u8  => |v| Vec3::new( v.z(),  v.x(),  v.y()),
+    6u8  => |v| Vec3::new( v.y(),  v.x(), -v.z()),
+    7u8  => |v| Vec3::new(-v.z(),  v.x(), -v.y()),
+    8u8  => |v| Vec3::new(-v.x(), -v.y(),  v.z()),
+    9u8  => |v| Vec3::new(-v.x(), -v.z(), -v.y()),
+    10u8 => |v| Vec3::new(-v.x(),  v.y(), -v.z()),
+    11u8 => |v| Vec3::new(-v.x(),  v.z(),  v.y()),
+    12u8 => |v| Vec3::new( v.y(), -v.x(),  v.z()),
+    13u8 => |v| Vec3::new( v.z(), -v.x(), -v.y()),
+    14u8 => |v| Vec3::new(-v.y(), -v.x(), -v.z()),
+    15u8 => |v| Vec3::new(-v.z(), -v.x(),  v.y()),
+    16u8 => |v| Vec3::new(-v.z(),  v.y(),  v.x()),
+    17u8 => |v| Vec3::new( v.y(),  v.z(),  v.x()),
+    18u8 => |v| Vec3::new( v.z(), -v.y(),  v.x()),
+    19u8 => |v| Vec3::new(-v.y(), -v.z(),  v.x()),
+    20u8 => |v| Vec3::new(-v.z(), -v.y(), -v.x()),
+    21u8 => |v| Vec3::new(-v.y(),  v.z(), -v.x()),
+    22u8 => |v| Vec3::new( v.z(),  v.y(), -v.x()),
+    23u8 => |v| Vec3::new( v.y(), -v.z(), -v.x()),
+};
 
 #[derive(Debug, Copy, Clone)]
 enum TransformStep {
@@ -11,6 +39,9 @@ enum TransformStep {
     //        negate negate
     Rotate180(usize, usize),
     Translate(Vec3),
+    //   swap   swap
+    Swap(usize, usize),
+    Rotate(u8),
 }
 
 type Transform = Vec<TransformStep>;
@@ -47,6 +78,10 @@ impl Vec3 {
 
     pub fn z_mut(&mut self) -> &mut i32 {
         self.data.get_mut(2).unwrap()
+    }
+
+    pub fn len_squared(&self) -> i32 {
+        self.x() * self.x() + self.y() * self.y() + self.z() * self.z()
     }
 
     pub fn calculate_rotation_transform(&self, from: &Vec3) -> Transform {
@@ -133,13 +168,16 @@ impl Vec3 {
             TransformStep::Translate(v) => {
                 *self += v;
             }
+            TransformStep::Swap(swap_this, to_that) => self.data.swap(*swap_this, *to_that),
+            TransformStep::Rotate(orientation_id) => {
+                *self = ORIENTATIONS.get(&orientation_id).unwrap()(self)
+            }
         }
     }
 
     pub fn transform_applied(&self, step: &TransformStep) -> Self {
         let mut result = self.clone();
         result.apply_transform_step(step);
-
         result
     }
 
@@ -204,6 +242,12 @@ impl<'a, 'b> std::ops::Sub<&'b Vec3> for &'a Vec3 {
     }
 }
 
+impl std::fmt::Display for Vec3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{},{})", self.x(), self.y(), self.z())
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 struct Vec3WithEnds {
     v: Vec3,
@@ -234,15 +278,25 @@ impl Scanner {
         Self { id, beacons }
     }
 
-    fn create_vectors(&self, starting_from: usize) -> Vec<Vec3WithEnds> {
-        let starting_point = self.beacons.get(starting_from).unwrap();
+    fn create_vectors(&self, starting_from: usize, orientation_id: u8) -> Vec<Vec3WithEnds> {
+        let rotation = TransformStep::Rotate(orientation_id);
+        let starting_point = self
+            .beacons
+            .get(starting_from)
+            .unwrap()
+            .transform_applied(&rotation);
 
         self.beacons
             .iter()
             .filter_map(|p| {
-                if p != starting_point {
-                    let vector = p - starting_point;
-                    Some(Vec3WithEnds::new(vector, *starting_point))
+                if *p != starting_point {
+                    let p = p.transform_applied(&rotation);
+                    let vector = &p - &starting_point;
+                    let len = vector.len_squared();
+                    if len == 0 {
+                        println!("LEN=0:: {} - {}", &p, &starting_point);
+                    }
+                    Some(Vec3WithEnds::new(vector, starting_point))
                 } else {
                     None
                 }
@@ -254,21 +308,45 @@ impl Scanner {
         &self,
         other: &Scanner,
     ) -> Option<Vec<(Vec3WithEnds, Vec3WithEnds)>> {
-        for i in 0..self.beacons.len() {
-            let self_vectors = self.create_vectors(i);
+        let i = 0;
+        let self_vectors = self.create_vectors(i, 0);
 
-            for j in 0..other.beacons.len() {
-                let other_vectors = other.create_vectors(j);
+        for j in 0..other.beacons.len() {
+            for orientation_id in 0..24 {
+                let other_vectors = other.create_vectors(j, orientation_id);
                 let product = self_vectors
                     .clone()
                     .into_iter()
                     .cartesian_product(other_vectors.into_iter());
 
                 let result = product
-                    .filter(|(v1, v2)| v1.v.contains_same_elements_abs_as(&v2.v))
+                    .inspect(|(v1, v2)| {
+                        // println!("v1: {}, v2: {}", v1.v, v2.v);
+                    })
+                    .filter(|(v1, v2)| {
+                        let v1_len = v1.v.len_squared();
+                        let v2_len = v2.v.len_squared();
+
+                        if v1_len == v2_len {
+                            // v1.v.contains_same_elements_abs_as(&v2.v) {
+                            println!(
+                                "Found a pair: {} - {} with orientation {}",
+                                v1.v, v2.v, orientation_id
+                            );
+                            true
+                        } else {
+                            false
+                        }
+                    })
                     .collect::<Vec<_>>();
 
-                if result.len() >= 11 {
+                println!("------------------{}-----------------", result.len());
+                for (v1, v2) in result.iter().map(|(x, y)| (x.v, y.v)) {
+                    println!("{} - {}", v1, v2);
+                }
+                println!("-------------------------------------");
+
+                if result.len() >= 11 || result.len() == self.beacons.len() - 1 {
                     return Some(result);
                 }
             }
@@ -355,11 +433,19 @@ fn discover_all_beacons(scanners: &Vec<Scanner>) {
 }
 
 fn main() {
-    let input = read_file_to_string("input/day19.txt");
+    let input = read_file_to_string("input/test.txt");
     let scanners = input
         .split("\r\n\r\n")
         .map(Scanner::parse)
         .collect::<Vec<_>>();
 
-    discover_all_beacons(&scanners);
+    // discover_all_beacons(&scanners);
+    let s0 = scanners.first().unwrap();
+    let s1 = scanners.last().unwrap();
+    let result = s0.get_overlapping_area(s1);
+    if let Some(result) = result {
+        dbg!(result.len());
+    } else {
+        println!("No result found");
+    }
 }
