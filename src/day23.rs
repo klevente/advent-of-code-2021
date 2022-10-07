@@ -65,6 +65,10 @@ impl Room {
         self.bottom.is_none() && self.top.is_none()
     }
 
+    pub fn can_accept(&self) -> bool {
+        self.bottom.is_none() || self.top.is_none()
+    }
+
     pub fn try_push(&mut self, amphipod: Amphipod) -> Option<u32> {
         if self.home_for != amphipod {
             return None;
@@ -75,11 +79,30 @@ impl Room {
         }
 
         if self.top.is_none() {
+            if self.bottom.unwrap() != self.home_for {
+                return None;
+            }
             self.top = Some(amphipod);
             return Some(1 * amphipod.get_energy_value());
         }
 
         None
+    }
+
+    pub fn top(&self) -> Option<Amphipod> {
+        if let Some(top) = self.top {
+            if self.home_for == top {
+                return None;
+            }
+            return self.top;
+        } else if let Some(bottom) = self.bottom {
+            if self.home_for == bottom {
+                return None;
+            }
+            return self.bottom;
+        } else {
+            None
+        }
     }
 
     pub fn try_pop(&mut self) -> Option<(u32, Amphipod)> {
@@ -140,8 +163,12 @@ impl Burrow {
     pub fn solve(&mut self) -> Option<u32> {
         let mut cost = 0u32;
         loop {
-            let mut greedy = self.try_move_an_amphipod_in_hallway_to_respective_room().unwrap_or(0);
-            greedy += self.try_move_an_amphipod_in_a_wrong_room_to_respective_room().unwrap_or(0);
+            let mut greedy = self
+                .try_move_an_amphipod_in_hallway_to_respective_room()
+                .unwrap_or(0);
+            greedy += self
+                .try_move_an_amphipod_in_a_wrong_room_to_respective_room()
+                .unwrap_or(0);
 
             if greedy == 0 {
                 break;
@@ -162,7 +189,9 @@ impl Burrow {
 
             for space_idx in 0..11 {
                 let mut copy = self.clone();
-                if let Some(move_cost) = copy.try_move_an_amphipod_from_a_wrong_room_to_hallway(room_idx, space_idx) {
+                if let Some(move_cost) =
+                    copy.try_move_an_amphipod_from_a_wrong_room_to_hallway(room_idx, space_idx)
+                {
                     let rec_result = copy.solve();
                     if rec_result.is_none() {
                         continue;
@@ -229,15 +258,18 @@ impl Burrow {
     fn try_move_an_amphipod_in_a_wrong_room_to_respective_room(&mut self) -> Option<u32> {
         for i in 0usize..4 {
             let starting_pos = self.rooms[i].position;
-            // this is wrong, as we don't want to remove it until we made sure it can be moved
-            if let Some((exit_cost, pod)) = self.rooms[i].try_pop() {
+
+            if let Some(pod) = self.rooms[i].top() {
                 let target_room_idx = Self::get_room_idx_for_amphipod(&pod);
                 let target_pos = self.rooms[target_room_idx].position;
-                if self.is_path_free_between_inclusive(starting_pos, target_pos) {
-                    let target_room = &mut self.rooms[target_room_idx];
-                    if let Some(entry_cost) = target_room.try_push(pod) {
-                        let move_cost = distance_between(starting_pos, target_room.position)
-                            * pod.get_energy_value();
+                if self.is_path_free_between_inclusive(starting_pos, target_pos)
+                    && self.rooms[target_room_idx].can_accept()
+                {
+                    if let Some(entry_cost) = self.rooms[target_room_idx].try_push(pod) {
+                        let (exit_cost, _) = self.rooms[i].try_pop().unwrap();
+                        let move_cost =
+                            distance_between(starting_pos, target_pos) * pod.get_energy_value();
+
                         let total_cost = exit_cost + move_cost + entry_cost;
                         return Some(total_cost);
                     }
@@ -247,7 +279,11 @@ impl Burrow {
         None
     }
 
-    fn try_move_an_amphipod_from_a_wrong_room_to_hallway(&mut self, room_idx: usize, space_idx: usize) -> Option<u32> {
+    fn try_move_an_amphipod_from_a_wrong_room_to_hallway(
+        &mut self,
+        room_idx: usize,
+        space_idx: usize,
+    ) -> Option<u32> {
         let room = &self.rooms[room_idx];
         let starting_pos = room.position;
 
