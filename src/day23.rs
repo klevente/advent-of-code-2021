@@ -1,5 +1,5 @@
 use crate::Amphipod::{A, B, C, D};
-use advent_of_code_2021::read_file_lines;
+use advent_of_code_2021::{read_file_lines, vec_to_array};
 use sscanf::scanf;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -22,6 +22,13 @@ impl From<char> for Amphipod {
     }
 }
 
+impl std::fmt::Display for Amphipod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let c = self.to_char();
+        write!(f, "{}", c)
+    }
+}
+
 impl Amphipod {
     pub fn get_energy_value(&self) -> u32 {
         match self {
@@ -31,100 +38,71 @@ impl Amphipod {
             D => 1000,
         }
     }
+
+    pub fn to_char(&self) -> char {
+        match self {
+            A => 'A',
+            B => 'B',
+            C => 'C',
+            D => 'D',
+        }
+    }
+}
+
+fn option_amphipod_to_char(pod: &Option<Amphipod>) -> char {
+    pod.map_or('.', |p| p.to_char())
 }
 
 #[derive(Debug, Clone)]
 struct Room {
     home_for: Amphipod,
     position: usize,
-    bottom: Option<Amphipod>,
-    top: Option<Amphipod>,
+    room_size: usize,
+    spots: Vec<Amphipod>,
 }
 
 impl Room {
-    pub fn new(home_for: Amphipod, position: usize, bottom: Amphipod, top: Amphipod) -> Self {
+    pub fn new(home_for: Amphipod, position: usize, initial_data: Vec<Amphipod>) -> Self {
         Self {
             home_for,
             position,
-            bottom: Some(bottom),
-            top: Some(top),
+            room_size: initial_data.len(),
+            spots: initial_data,
         }
     }
 
     pub fn is_finished(&self) -> bool {
-        // could've used `is_some_and` but it's unstable
-        if let Some(bottom) = self.bottom {
-            if let Some(top) = self.top {
-                return bottom == self.home_for && top == self.home_for;
-            }
-        }
-        false
+        self.spots.len() == self.room_size && self.spots.iter().all(|&p| p == self.home_for)
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bottom.is_none() && self.top.is_none()
+        self.spots.len() == 0
     }
 
-    pub fn can_accept(&self) -> bool {
-        self.bottom.is_none() || self.top.is_none()
+    pub fn can_accept(&self, amphipod: &Amphipod) -> bool {
+        self.spots.len() < self.room_size && self.spots.iter().all(|a| a == amphipod)
     }
 
     pub fn try_push(&mut self, amphipod: Amphipod) -> Option<u32> {
-        if self.home_for != amphipod {
-            return None;
-        }
-        if self.bottom.is_none() {
-            self.bottom = Some(amphipod);
-            return Some(2 * amphipod.get_energy_value());
-        }
-
-        if self.top.is_none() {
-            if self.bottom.unwrap() != self.home_for {
-                return None;
-            }
-            self.top = Some(amphipod);
-            return Some(1 * amphipod.get_energy_value());
-        }
-
-        None
-    }
-
-    pub fn top(&self) -> Option<Amphipod> {
-        if let Some(top) = self.top {
-            if self.home_for == top {
-                return None;
-            }
-            return self.top;
-        } else if let Some(bottom) = self.bottom {
-            if self.home_for == bottom {
-                return None;
-            }
-            return self.bottom;
+        if self.home_for == amphipod && self.can_accept(&amphipod) {
+            self.spots.push(amphipod);
+            Some((self.room_size - self.spots.len() + 1) as u32 * amphipod.get_energy_value())
         } else {
             None
         }
     }
 
+    pub fn top(&self) -> Option<Amphipod> {
+        self.spots.last().copied()
+    }
+
     pub fn try_pop(&mut self) -> Option<(u32, Amphipod)> {
-        if let Some(top) = self.top {
-            if self.home_for == top {
-                return None;
-            }
-            let energy = 1 * top.get_energy_value();
-            self.top = None;
-            return Some((energy, top));
+        if self.spots.iter().all(|&a| a == self.home_for) {
+            return None;
         }
-
-        if let Some(bottom) = self.bottom {
-            if self.home_for == bottom {
-                return None;
-            }
-            let energy = 2 * bottom.get_energy_value();
-            self.bottom = None;
-            return Some((energy, bottom));
-        }
-
-        None
+        let popped = self.spots.pop();
+        let new_size = self.spots.len();
+        popped.map(|a| ((self.room_size - new_size) as u32 * a.get_energy_value(), a))
     }
 }
 
@@ -140,24 +118,85 @@ struct Burrow {
 
 impl Burrow {
     pub fn new(input: &Vec<String>) -> Self {
-        let top_row = input.get(2).unwrap();
-        let bottom_row = input.get(3).unwrap();
+        let first_room_row = 2;
+        let second_roow_row = first_room_row + 1;
+        let num_of_room_rows = input.len() - 3;
+        let last_room_row = first_room_row + num_of_room_rows;
+        let room_rows_excluding_first = &input[second_roow_row..last_room_row];
 
-        let (t_a, t_b, t_c, t_d) =
-            scanf!(top_row, "###{}#{}#{}#{}###", char, char, char, char).unwrap();
+        let mut vec_a: Vec<Amphipod> = Vec::with_capacity(num_of_room_rows);
+        let mut vec_b: Vec<Amphipod> = Vec::with_capacity(num_of_room_rows);
+        let mut vec_c: Vec<Amphipod> = Vec::with_capacity(num_of_room_rows);
+        let mut vec_d: Vec<Amphipod> = Vec::with_capacity(num_of_room_rows);
 
-        let (b_a, b_b, b_c, b_d) =
-            scanf!(bottom_row, "  #{}#{}#{}#{}#", char, char, char, char).unwrap();
+        for r in room_rows_excluding_first.iter().rev() {
+            let (a, b, c, d) = scanf!(r, "  #{}#{}#{}#{}#", char, char, char, char).unwrap();
+            vec_a.push(a.into());
+            vec_b.push(b.into());
+            vec_c.push(c.into());
+            vec_d.push(d.into());
+        }
+
+        let (a, b, c, d) = scanf!(
+            input[first_room_row],
+            "###{}#{}#{}#{}###",
+            char,
+            char,
+            char,
+            char
+        )
+        .unwrap();
+
+        vec_a.push(a.into());
+        vec_b.push(b.into());
+        vec_c.push(c.into());
+        vec_d.push(d.into());
 
         Self {
             hallway: [None; 11],
             rooms: [
-                Room::new(A, 2, b_a.into(), t_a.into()),
-                Room::new(B, 4, b_b.into(), t_b.into()),
-                Room::new(C, 6, b_c.into(), t_c.into()),
-                Room::new(D, 8, b_d.into(), t_d.into()),
+                Room::new(A, 2, vec_a),
+                Room::new(B, 4, vec_b),
+                Room::new(C, 6, vec_c),
+                Room::new(D, 8, vec_d),
             ],
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn print(&self) {
+        println!("#############");
+        let hallway = self
+            .hallway
+            .iter()
+            .map(|s| option_amphipod_to_char(&s))
+            .collect::<String>();
+
+        println!("#{hallway}#");
+
+        let map_row_to_chars = |row_idx: usize| -> [char; 4] {
+            vec_to_array(
+                self.rooms
+                    .iter()
+                    .map(|r| option_amphipod_to_char(&r.spots.get(row_idx).copied()))
+                    .collect(),
+            )
+        };
+
+        let room_sizes = self.rooms[0].room_size;
+
+        let top_chars = map_row_to_chars(room_sizes - 1);
+        println!(
+            "###{}#{}#{}#{}###",
+            top_chars[0], top_chars[1], top_chars[2], top_chars[3],
+        );
+        for i in (0..(room_sizes - 1)).rev() {
+            let chars = map_row_to_chars(i);
+            println!("  #{}#{}#{}#{}#", chars[0], chars[1], chars[2], chars[3],);
+        }
+
+        println!("  #########");
+        println!();
     }
 
     pub fn solve(&mut self) -> Option<u32> {
@@ -225,7 +264,7 @@ impl Burrow {
         let i = from.min(to);
         let j = from.max(to);
 
-        self.hallway[i..j].iter().all(|s| s.is_none())
+        self.hallway[i..j].iter().filter(|s| s.is_some()).count() <= 1
     }
 
     fn is_path_free_between_inclusive(&self, from: usize, to: usize) -> bool {
@@ -256,17 +295,17 @@ impl Burrow {
     }
 
     fn try_move_an_amphipod_in_a_wrong_room_to_respective_room(&mut self) -> Option<u32> {
-        for i in 0usize..4 {
-            let starting_pos = self.rooms[i].position;
+        for start_room_idx in 0usize..4 {
+            let starting_pos = self.rooms[start_room_idx].position;
 
-            if let Some(pod) = self.rooms[i].top() {
+            if let Some(pod) = self.rooms[start_room_idx].top() {
                 let target_room_idx = Self::get_room_idx_for_amphipod(&pod);
                 let target_pos = self.rooms[target_room_idx].position;
-                if self.is_path_free_between_inclusive(starting_pos, target_pos)
-                    && self.rooms[target_room_idx].can_accept()
+                if start_room_idx != target_room_idx
+                    && self.is_path_free_between_inclusive(starting_pos, target_pos)
                 {
                     if let Some(entry_cost) = self.rooms[target_room_idx].try_push(pod) {
-                        let (exit_cost, _) = self.rooms[i].try_pop().unwrap();
+                        let (exit_cost, _) = self.rooms[start_room_idx].try_pop().unwrap();
                         let move_cost =
                             distance_between(starting_pos, target_pos) * pod.get_energy_value();
 
@@ -291,7 +330,7 @@ impl Burrow {
             return None;
         }
 
-        if space_idx == starting_pos {
+        if space_idx == 2 || space_idx == 4 || space_idx == 6 || space_idx == 8 {
             return None;
         }
 
@@ -311,13 +350,27 @@ impl Burrow {
     }
 }
 
+fn solve_first(input: &Vec<String>) {
+    let min_total_energy = Burrow::new(input).solve().unwrap();
+    println!(
+        "The minimum energy required for ampipods to organize in the original input is {}",
+        min_total_energy
+    );
+}
+
+fn solve_second(input: &Vec<String>) {
+    let mut input = input.clone();
+    input.insert(3, "  #D#C#B#A#".to_string());
+    input.insert(4, "  #D#B#A#C#".to_string());
+    let min_total_energy = Burrow::new(&input).solve().unwrap();
+    println!(
+        "The minimum energy required for ampipods to organize in the extended input is {}",
+        min_total_energy
+    );
+}
+
 fn main() {
     let input = read_file_lines("input/day23.txt");
-
-    let mut burrow = Burrow::new(&input);
-
-    println!("{:?}", burrow);
-
-    let result = burrow.solve();
-    println!("{:?}", result);
+    solve_first(&input);
+    solve_second(&input);
 }
