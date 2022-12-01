@@ -1,8 +1,5 @@
 use array2d::Array2D;
-use std::convert::TryInto;
-use std::fmt::Display;
-use std::fs::read_to_string;
-use std::path::Path;
+use std::{convert::TryInto, fmt::Display, fs::read_to_string, path::Path};
 
 pub fn read_file_to_string(path: impl AsRef<Path>) -> String {
     read_to_string(path).unwrap()
